@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/JPCFIX.Optimizer.Core/JPCFIX.Optimizer.Core.csproj" />
+    <Project Path="src/JPCFIX.Optimizer.Application/JPCFIX.Optimizer.Application.csproj" />
+    <Project Path="src/JPCFIX.Optimizer.Infrastructure/JPCFIX.Optimizer.Infrastructure.csproj" />
+    <Project Path="src/JPCFIX.Optimizer.Desktop/JPCFIX.Optimizer.Desktop.csproj" />
+    <Project Path="src/JPCFIX.Optimizer.Runner/JPCFIX.Optimizer.Runner.csproj" />
+  </Folder>
+  <Folder Name="/tests/"><Project Path="tests/JPCFIX.Optimizer.Tests/JPCFIX.Optimizer.Tests.csproj" /></Folder>
+</Solution>

@@ -1,0 +1,11 @@
+# Seguridad y límites
+
+La interfaz abre con el token del usuario. Solo el ejecutor requiere administrador. Acepta exactamente `apply <original-guid> <target-guid>`, `rollback <operation-guid>` o `restore-point`; rechaza argumentos extra, comandos, rutas y GUID vacíos. El mismo parser se prueba sin privilegios. El runner relee Windows, valida ambos planes, comprueba el respaldo y solicita confirmación propia, incluso si se invoca desde otra aplicación. No hay RPC, scripts ni entrada de comandos arbitrarios.
+
+Los respaldos están bajo ProgramData con propietario Administradores y DACL protegida: Administradores/SYSTEM escritura; Usuarios lectura. Un directorio preexistente con propietario inesperado o una ruta con reparse points impide operar. Los errores de persistencia antes del respaldo impiden modificar Windows. Los errores posteriores mantienen un respaldo recuperable. Los eventos de auditoría usan etiquetas fijas, sin volcar excepciones, identidades o comandos de inicio. La cancelación UAC ocurre antes de iniciar el runner y solo puede notificarse en la UI.
+
+La carpeta portable es un límite de confianza: conservar binarios oficiales y controlar quién puede reemplazarlos. Esta versión fuente **no incluye firma Authenticode**. Firmar y verificar ambos ejecutables antes de distribución profesional. El ejecutor no protege contra un administrador malicioso ni contra un binario reemplazado en el pendrive. Todos los usuarios locales pueden leer GUID de planes e historial; los reportes opcionales pueden contener nombre de equipo y procesos y deben custodiarse.
+
+No se modifican Defender, Firewall, Windows Update, servicios, drivers, tareas programadas, inicio, conectividad ni herramientas de recuperación. No hay limpieza, desinstalación ni edición masiva del registro. Los puntos de restauración no se eliminan, y no se altera su frecuencia ni se habilita protección del sistema.
+
+No se garantiza que otro software mantenga un plan activo después de la verificación. Modern Standby, políticas de dominio y software OEM pueden restringir los planes. Si desaparece el plan original o se activa un tercero, la reversión se bloquea y requiere intervención técnica. No se prometen mejoras de rendimiento; medir rendimiento, batería y temperatura en cada equipo.
