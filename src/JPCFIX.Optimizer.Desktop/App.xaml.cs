@@ -13,7 +13,8 @@ public partial class App : System.Windows.Application
         var power = new WindowsPowerService();
         var store = new JsonChangeStore(JsonChangeStore.DefaultDirectory);
         var vm = new MainViewModel(new WindowsDiagnostics(), new PowerOptimization(power, store,
-            WindowsCompatibility.IsSupported), store, new RunnerClient());
+            WindowsCompatibility.IsSupported), store, new RunnerClient(),
+            new BackupViewModel(new SmartBackupService(new WindowsBackupEnvironment())));
         var window = new MainWindow { DataContext = vm };
         MainWindow = window;
         window.Loaded += async (_, _) => await vm.InitializeAsync();

@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>WinExe</OutputType><UseWPF>true</UseWPF><ApplicationManifest>app.manifest</ApplicationManifest></PropertyGroup>
+  <PropertyGroup><OutputType>WinExe</OutputType><UseWPF>true</UseWPF><ApplicationManifest>app.manifest</ApplicationManifest><ApplicationIcon>../JPCFIX.Optimizer.Desktop/Assets/Jpcfix.ico</ApplicationIcon></PropertyGroup>
   <ItemGroup><ProjectReference Include="../JPCFIX.Optimizer.Application/JPCFIX.Optimizer.Application.csproj" /><ProjectReference Include="../JPCFIX.Optimizer.Infrastructure/JPCFIX.Optimizer.Infrastructure.csproj" /></ItemGroup>
 </Project>

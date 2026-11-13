@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using JPCFIX.Optimizer.Core;
 
 namespace JPCFIX.Optimizer.Desktop;
@@ -10,8 +11,10 @@ public sealed class RunnerClient : IPrivilegedExecutor
     public Task CreateRestorePointAsync() => Run("restore-point");
     private static async Task Run(params string[] args)
     {
-        var executable = Path.Combine(AppContext.BaseDirectory, "Runner", "JPCFIX.Optimizer.Runner.exe");
-        if (!File.Exists(executable)) throw new InvalidOperationException("Falta Runner/JPCFIX.Optimizer.Runner.exe. Usá la carpeta portable publicada completa.");
+        var hash = typeof(RunnerClient).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .SingleOrDefault(a => a.Key == "PublishedRunnerSha256")?.Value;
+        using var verified = RunnerPackage.OpenVerified(AppContext.BaseDirectory, hash);
+        var executable = verified.Name;
         var start = new ProcessStartInfo(executable) { UseShellExecute = true, Verb = "runas", WorkingDirectory = Path.GetDirectoryName(executable)! };
         foreach (var arg in args) start.ArgumentList.Add(arg);
         using var process = Process.Start(start) ?? throw new InvalidOperationException("No se pudo iniciar el ejecutor.");

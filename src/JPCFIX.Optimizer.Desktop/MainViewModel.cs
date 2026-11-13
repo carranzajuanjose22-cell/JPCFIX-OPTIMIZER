@@ -25,8 +25,21 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private PowerPlan? selectedPlan;
     private ChangeRecord? selectedChange;
     private static string SettingsPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPCFIX.Optimizer", "settings.json");
-    public MainViewModel(IDiagnosticService diagnostic, IOptimization optimization, IChangeStore store, IPrivilegedExecutor executor)
+    public BackupViewModel Backup { get; }
+    public IReadOnlyList<NavigationEntry> Navigation { get; } = [new(0, "Inicio", "Home"), new(1, "Diagnóstico", "Diagnostic"), new(2, "Optimizaciones", "Rocket"), new(3, "Historial", "History"), new(5, "Smart Backup", "Database"), new(4, "Configuración", "Settings")];
+    private DashboardData dashboard = DashboardData.From(null);
+    public DashboardData Dashboard { get => dashboard; private set { Set(ref dashboard, value); PresentAnalysis(); } }
+    public string AnalysisState => Busy ? "Procesando" : Dashboard.Analyzed ? "Diagnóstico disponible" : "Sin análisis";
+    public string AnalysisHeading => Dashboard.Analyzed ? "Diagnóstico disponible para revisión" : "El equipo aún no ha sido analizado.";
+    public string VersionText => "JPCFIX Optimizer v" + typeof(MainViewModel).Assembly.GetName().Version?.ToString(3);
+    public IEnumerable<ChangeRecord> RecentActivity => History.OrderByDescending(r => r.CreatedAt).Take(3);
+    public string OptimizationName => optimization.Name;
+    public string OptimizationDescription => optimization.Description;
+    public string OptimizationRisk => optimization.RiskLevel switch { RiskLevel.Low => "Bajo", RiskLevel.Moderate => "Moderado", _ => "Alto" };
+    public string OptimizationAvailability => preview?.Compatibility.Reason ?? Recommendations;
+    public MainViewModel(IDiagnosticService diagnostic, IOptimization optimization, IChangeStore store, IPrivilegedExecutor executor, BackupViewModel backup)
     {
+        Backup = backup;
         this.diagnostic = diagnostic; this.optimization = optimization; this.store = store; this.executor = executor;
         ReportDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPCFIX.Optimizer", "Reports");
         ScanCommand = Command(ScanAsync); RefreshCommand = Command(RefreshAsync);
@@ -59,7 +72,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand ExportCommand { get; }
     public ICommand DetectRestoreCommand { get; }
     public ICommand RestoreCommand { get; }
-    public bool Busy { get => busy; private set { Set(ref busy, value); NotifyCommands(); } }
+    public bool Busy { get => busy; private set { Set(ref busy, value); PresentAnalysis(); NotifyCommands(); } }
     public int Page { get => page; set => Set(ref page, value); }
     public string Status { get => status; private set => Set(ref status, value); }
     public string Summary { get => summary; private set => Set(ref summary, value); }
@@ -70,7 +83,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string RestoreStatus { get => restoreStatus; private set => Set(ref restoreStatus, value); }
     public string ReportDirectory { get => reportDirectory; set => Set(ref reportDirectory, value); }
     public string StorageText => $"Respaldos obligatorios: {JsonChangeStore.DefaultDirectory}\nConfiguración del usuario: {SettingsPath}";
-    public PowerPlan? SelectedPlan { get => selectedPlan; set { Set(ref selectedPlan, value); preview = null; PreviewText = "La selección cambió. Volvé a simular."; NotifyCommands(); } }
+    public PowerPlan? SelectedPlan { get => selectedPlan; set { Set(ref selectedPlan, value); preview = null; PreviewText = "La selección cambió. Volvé a simular."; PropertyChanged?.Invoke(this, new(nameof(OptimizationAvailability))); NotifyCommands(); } }
     public ChangeRecord? SelectedChange { get => selectedChange; set { Set(ref selectedChange, value); NotifyCommands(); } }
     public Task InitializeAsync() => RunAsync(async () =>
     {
@@ -85,6 +98,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         Status = "Analizando hardware y Windows…";
         report = await diagnostic.ScanAsync(CancellationToken.None);
+        Dashboard = DashboardData.From(report);
         Diagnostics.Clear(); foreach (var item in report.Items) Diagnostics.Add(item);
         Warnings = string.Join("\n", report.Warnings);
         Summary = string.Join("\n", report.Items.Where(i => i.Category is "CPU" or "RAM" or "Almacenamiento" or "Windows").Select(i => $"{i.Name}: {i.Value}"));
@@ -99,11 +113,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         PowerStatus = $"Activo: {SelectedPlan?.Name ?? "No disponible"} ({state.Active})\nAlimentación: {state.PowerSource}";
         var alternatives = state.Plans.Count(p => p.Id != state.Active);
         Recommendations = $"{alternatives} alternativa(s) de energía disponible(s). Recomendaciones automáticas: 0; la elección requiere evaluación técnica.";
+        PropertyChanged?.Invoke(this, new(nameof(OptimizationAvailability)));
     }
     private async Task PreviewAsync()
     {
         var target = SelectedPlan?.Id ?? throw new InvalidOperationException("Seleccioná un plan.");
         preview = await Task.Run(() => optimization.Preview(target));
+        PropertyChanged?.Invoke(this, new(nameof(OptimizationAvailability)));
         PreviewText = $"DRY RUN · No modifica Windows\nOriginal: {preview.Original}\nPropuesto / esperado: {preview.Target}\n{preview.Description}\nCompatibilidad: {preview.Compatibility.Reason}\nRiesgo: Moderado\nAdministrador: Sí · Reinicio: No\nReversión: {(preview.CanRollback ? "Disponible" : "No disponible")}";
     }
     private async Task ApplyAsync()
@@ -117,6 +133,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var records = await store.ReadAllAsync();
         History.Clear(); foreach (var record in records) History.Add(record);
+        PropertyChanged?.Invoke(this, new(nameof(RecentActivity)));
         var incomplete = records.Count(r => r.Status is ChangeStatus.Prepared or ChangeStatus.RecoveryRequired);
         if (incomplete > 0) { Status = $"Hay {incomplete} operación(es) incompleta(s). Revisá Historial y solicitá recuperación."; Page = 3; }
     }
@@ -146,7 +163,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         await File.WriteAllTextAsync(file, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
         Status = $"Reporte exportado: {file}";
     }
-    private static bool Confirm(string text) => MessageBox.Show(text, "JPCFIX · Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
+    private static bool Confirm(string text) => AppDialog.Confirm("Confirmar operación", text);
+    private void PresentAnalysis() { PropertyChanged?.Invoke(this, new(nameof(AnalysisState))); PropertyChanged?.Invoke(this, new(nameof(AnalysisHeading))); }
     private AsyncCommand Command(Func<Task> action, Func<bool>? available = null)
     { var command = new AsyncCommand(() => RunAsync(action), () => !Busy && (available?.Invoke() ?? true)); commands.Add(command); return command; }
     private async Task RunAsync(Func<Task> action)

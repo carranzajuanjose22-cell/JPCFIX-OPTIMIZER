@@ -2,7 +2,7 @@
 
 ## Estado de la entrega
 
-Revisión estática de código y estructura únicamente. Se verificó la sintaxis XML de XAML, proyectos, manifiestos y solución; también las ocho referencias entre proyectos. Hay 17 métodos xUnit (más casos parametrizados), todavía sin ejecutar. No se ejecutaron compilación, xUnit, WPF ni APIs nativas: falta SDK .NET 10 y falló la descarga por red. No se aplicó ningún cambio real de plan, punto de restauración ni configuración del equipo de desarrollo. **Los criterios de inicio, ejecución y publicación siguen pendientes hasta completar esta validación.**
+Actualización de la fase 2: se obtuvo el SDK .NET 10, se compiló la solución y se ejecutaron los casos xUnit de energía junto con Smart Backup. No se aplicaron cambios reales de energía ni puntos de restauración. La UI y la distribución portable todavía requieren la validación manual indicada abajo. Ver también [pruebas de Smart Backup](SMART_BACKUP_TESTING.md).
 
 Ejecutar `dotnet restore`, `dotnet build -c Release` y `dotnet test -c Release` sobre JPCFIX.Optimizer.slnx. El proyecto de pruebas usa FakePower y almacén en memoria; la prueba JSON escribe solo un directorio temporal único. Nunca llama APIs de energía ni restauración del sistema. Cubre compatibilidad, destino inválido, original irrecuperable, dry run, idempotencia, respaldo previo, fallo de persistencia, preview obsoleto, solicitud alterada, aplicación fallida, verificación fallida, compensación fallida, reversión individual, interrupciones, conflictos externos, protocolo y reapertura JSON.
 

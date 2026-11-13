@@ -1,5 +1,7 @@
 # Arquitectura
 
+Este documento describe el optimizador de energía. Smart Backup usa las mismas capas sin pasar por Runner y se detalla en [SMART_BACKUP_ARCHITECTURE.md](SMART_BACKUP_ARCHITECTURE.md). Las restricciones de escritura de la UI aquí descritas corresponden a los respaldos privilegiados de energía, no a la copia autorizada de datos personales.
+
 Core define modelos, contratos y protocolo cerrado `RunnerRequest`. Application contiene `PowerOptimization`: reglas deterministas, preview, respaldo, aplicación, verificación y compensación. Infrastructure integra PowrProf, Kernel32, WMI, JSON atómico y puntos de restauración. Desktop contiene vistas XAML, ViewModel y cliente UAC. Runner es un ejecutable independiente con manifiesto requireAdministrator y confirmación propia. Desktop usa asInvoker. Las dependencias se inyectan por constructor en la raíz de composición; no se necesita contenedor DI externo.
 
 Flujo: leer → comprobar disponibilidad del original y destino → simular → confirmar → UAC → validar protocolo → adquirir mutex global → proteger almacenamiento → auditar intención → releer y confirmar → persistir Prepared con flush → comprobar estado otra vez → aplicar API → verificar → persistir Applied. Un error intenta compensar sin sobrescribir un tercer plan. Si no puede verificarse la compensación se guarda RecoveryRequired. La cancelación no interrumpe una transacción después del respaldo.

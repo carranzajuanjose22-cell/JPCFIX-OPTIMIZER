@@ -1,10 +1,24 @@
 # JPCFIX Optimizer
 
-Primera implementación portable para técnicos: C# / .NET 10, WPF, MVVM e inyección por constructor. Interfaz en español. Diagnóstico real de solo lectura y **una sola optimización: cambiar a un plan de energía existente**.
+Aplicación portable para técnicos: C# / .NET 10, WPF, MVVM e inyección por constructor. Interfaz en español. Diagnóstico de solo lectura, **una sola optimización: cambiar a un plan de energía existente**, y **Smart Backup — Entrega A**, independiente del optimizador.
 
 ## Estado verificable de esta entrega
 
-El repositorio inicial estaba vacío. Se generaron la solución, los seis proyectos, interfaz, API nativa, ejecutor UAC, persistencia, pruebas y documentación. **No se compiló, no se ejecutó WPF y no se ejecutaron los tests en este entorno**: no hay SDK `dotnet` en PATH y el acceso al servidor de descarga falló. La solicitud de descarga con permisos adicionales fue abortada. No existe aún un binario portable validado. Esta entrega requiere completar los pasos siguientes antes de usarla en equipos de clientes.
+Se generó la distribución autocontenida Windows x64 y pasaron **93 casos de prueba**, incluidos presentación/navegación WPF, Smart Backup, regresiones de energía y protección del auxiliar UAC. La interfaz se rediseñó con un dashboard de datos reales, navegación lateral, tarjetas y controles oscuros compartidos. Se comprobó el arranque publicado, diagnóstico, simulación, copia sintética verificada y preview de restauración en Windows 11. La matriz de VMs limpias Windows 10/11, DPI físico y USB sigue pendiente. No se realizaron commits ni push. Ver [rediseño UI, archivos y validación](docs/UI_REDESIGN.md).
+
+## Ejecutar sin instalar
+
+Copiar **toda** la carpeta `dist/JPCFIX-Optimizer-Portable/` al pendrive, incluida `Runner`, y hacer doble clic en **JPCFIX-Optimizer.exe**. No se necesita instalar .NET ni ejecutar scripts. El inicio no solicita administrador; solo los cambios privilegiados solicitan UAC. No copiar únicamente el EXE principal, porque el auxiliar se distribuye separado para conservar el límite de privilegios. Ver [distribución portable, publicación y validación](docs/PORTABLE_DISTRIBUTION.md).
+
+## Smart Backup — Entrega A
+
+En el menú lateral, elegir Smart Backup. Crear nuevo respaldo detecta las carpetas conocidas del usuario de la sesión; permite personalizar, agregar archivos/carpetas, analizar tamaño/errores y elegir un destino local, USB o UNC. La confirmación muestra espacio/formato y advertencias de disco. La copia usa temporales, SHA-256 por streaming y una segunda verificación; cualquier error, exclusión o descarga pendiente impide anunciar un respaldo completo.
+
+Para restaurar, trasladar **toda la carpeta JPCFIX_Backup_…**, seleccionar Restaurar respaldo, verificar, elegir categorías y revisar rutas/conflictos. Se usan las carpetas actuales del usuario nuevo; Extras va a JPCFIX Recuperados. Por defecto conserva ambos archivos; reemplazar requiere confirmación. El backup incluye manifest.json y reports/backup-report.txt; los informes de restauración quedan en LocalAppData/JPCFIX.Optimizer/BackupReports.
+
+Solo se ofrece el usuario actual: para otra cuenta hay que iniciar sesión con ella. Esta entrega no incluye marcadores de navegadores, Mis aplicaciones/WinGet, fondo de pantalla ni reanudación automática (entregas B/C). No descarga archivos de nube y rechaza enlaces/reparse points. **Los respaldos no están cifrados. No formatear con errores, pendientes o un destino que se perderá al borrar el disco.**
+
+Ver [arquitectura de Smart Backup](docs/SMART_BACKUP_ARCHITECTURE.md), [seguridad](docs/SMART_BACKUP_SECURITY.md), [pruebas y procedimiento en VM](docs/SMART_BACKUP_TESTING.md) y [límites y pendientes](docs/SMART_BACKUP_LIMITATIONS.md).
 
 ## Compilar y probar en Windows
 
@@ -17,7 +31,7 @@ dotnet test JPCFIX.Optimizer.slnx -c Release --no-build
 .\scripts\publish.cmd
 ```
 
-La carpeta `artifacts/portable` contendrá `JPCFIX.Optimizer.Desktop.exe` y `Runner/JPCFIX.Optimizer.Runner.exe`, cada uno con sus dependencias autocontenidas. Copiar **toda la carpeta** al pendrive. Ejecutar Desktop sin elevación; UAC se solicita al ejecutar cambios o crear puntos de restauración. No se instala runtime, servicio ni proceso residente. La publicación requiere descargar paquetes de runtime; su uso posterior es offline.
+La carpeta `dist/JPCFIX-Optimizer-Portable` contiene `JPCFIX-Optimizer.exe` y `Runner/JPCFIX.Optimizer.Runner.exe`, cada uno como un único archivo autocontenido con sus bibliotecas nativas incluidas. Copiar **toda la carpeta** al pendrive. Ejecutar el principal sin elevación; UAC se solicita al ejecutar cambios o crear puntos de restauración, después de comprobar la identidad del auxiliar. No se instala runtime, servicio ni proceso residente. Solo la compilación/publicación requiere SDK y descarga inicial de paquetes; el uso del paquete es offline.
 
 Para desarrollar solo la interfaz: `dotnet run --project src/JPCFIX.Optimizer.Desktop`. Las operaciones privilegiadas requieren la distribución completa generada por el script.
 

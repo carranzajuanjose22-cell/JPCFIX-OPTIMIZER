@@ -1,4 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>WinExe</OutputType><UseWPF>true</UseWPF><ApplicationManifest>app.manifest</ApplicationManifest></PropertyGroup>
+  <PropertyGroup><OutputType>WinExe</OutputType><UseWPF>true</UseWPF><ApplicationManifest>app.manifest</ApplicationManifest><ApplicationIcon>Assets/Jpcfix.ico</ApplicationIcon></PropertyGroup>
+  <ItemGroup><Resource Include="Assets/Jpcfix.ico" /><Resource Include="Assets/Jpcfix-logo.png" /><Resource Include="Assets/BrandLogo.ps" /></ItemGroup>
+  <ItemGroup Condition="'$(RunnerSha256)' != ''"><AssemblyMetadata Include="PublishedRunnerSha256" Value="$(RunnerSha256)" /></ItemGroup>
+  <Target Name="RequirePortableRunnerHash" BeforeTargets="Publish" Condition="'$(PublishSingleFile)' == 'true' and '$(RunnerSha256)' == ''">
+    <Error Text="La publicación portable requiere RunnerSha256. Usá scripts/publish.ps1 para generar y verificar el paquete completo." />
+  </Target>
   <ItemGroup><ProjectReference Include="../JPCFIX.Optimizer.Application/JPCFIX.Optimizer.Application.csproj" /><ProjectReference Include="../JPCFIX.Optimizer.Infrastructure/JPCFIX.Optimizer.Infrastructure.csproj" /></ItemGroup>
 </Project>
